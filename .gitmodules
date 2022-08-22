@@ -1,0 +1,9 @@
+[submodule "ComandaLivre-API"]
+	path = ComandaLivre-API
+	url = https://github.com/pedroermarinho/ComandaLivre-API.git
+[submodule "ComandaLivre-WEB"]
+	path = ComandaLivre-WEB
+	url = https://github.com/pedroermarinho/ComandaLivre-WEB.git
+[submodule "ComandaLivre-MOBILE"]
+	path = ComandaLivre-MOBILE
+	url = https://github.com/pedroermarinho/ComandaLivre-MOBILE.git

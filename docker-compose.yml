@@ -1,0 +1,94 @@
+version: '3'
+services:
+  db:
+    container_name: db
+    image: postgres:13.3-alpine
+    command: postgres -c 'max_connections=200' 
+    restart: always
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+      - db:/var/lib/postgresql
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_MULTIPLE_DATABASES: ${DB_CONFIG:-config},${DB:-comandalivre}
+      POSTGRES_USER: ${DB_USER:-comandalivre}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-comandalivre}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4
+    restart: always
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+  sonarqube:
+    image: sonarqube:9.6.0-community
+    container_name: sonarqube
+    ports:
+      - '9000:9000'
+    volumes:
+      - sonarqube_conf:/opt/sonarqube/conf
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    depends_on:
+      - db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://${DB_HOST:-db}:${DB_PORT:-5432}/${DB_CONFIG:-config}
+      SONAR_JDBC_USERNAME: ${DB_USER:-comandalivre}
+      SONAR_JDBC_PASSWORD: ${DB_PASSWORD:-secret}
+
+  api:
+    container_name: api
+    restart: always
+    build:
+      context: ComandaLivre-API
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB: ${DB:-comandalivre}
+      DB_USER: ${DB_USER:-comandalivre}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      JWT: ${JWT:-sdfsgdefgdfgdfgsdfgsdfsdf}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-172800}
+    depends_on:
+      - db
+
+  web:
+    container_name: web
+    restart: always
+    build:
+      context: ComandaLivre-WEB
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
+      - 81:81
+      - 8081:8081
+      - 443:443
+    depends_on:
+      - api
+
+
+volumes:
+  db:
+  db-data:
+  pgadmin-data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_conf:
